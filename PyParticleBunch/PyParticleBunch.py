@@ -16,9 +16,10 @@ try:
 except ImportError:
     print("# PyParticleBunch : numpy module is required. ")
 try:
-    import mpi4py as pympi
+    import sympy as sy
+    import sympy.stats as stats
 except ImportError:
-    print("# PyParticleBunch : mpi4py module is required. ")
+    print("# PyParticleBunch : sympy module is required. ")
    try:
     import tfs
 except ImportError:
