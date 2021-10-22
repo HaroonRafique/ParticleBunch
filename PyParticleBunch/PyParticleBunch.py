@@ -698,7 +698,6 @@ class MatchedBunchGenerator3D:
         return (array_x, array_xp, array_y, array_yp, array_z, array_zp)
 
 class ParticleBunch:
-    
     # Constructors
     #---------------------------------------------------------
         
@@ -1056,7 +1055,7 @@ class ParticleBunch:
             
     # PLOTTING
     #---------------------------------------------
-    def plot_heatmap(self, coordinate1, coordinate2, savefile, bins=128):    
+    def plot_heatmap(self, coordinate1, coordinate2, savefile, title=None, bins=128):    
         coord1 = self.sort_coordinate(coordinate1)
         coord2 = self.sort_coordinate(coordinate2)      
         u_dat = self.get_coordinate_array(coord1)
@@ -1077,8 +1076,6 @@ class ParticleBunch:
         gridspec.GridSpec(3,3) # Create grid to resize subplots        
         fig.subplots_adjust(hspace = 0) # Horizontal spacing between subplots
         fig.subplots_adjust(wspace = 0) # Vertical spacing between subplots
-
-        title = 'Gaussian x-xp phase space'
 
         # 2D Histogram
         plt.subplot2grid((3,3), (1,0), colspan=2, rowspan=2)
@@ -1110,6 +1107,9 @@ class ParticleBunch:
         axis_top = plt.gca()
         axis_top.axes.set_xlim(axis_main_xlim)
         axis_top.xaxis.set_ticks_position("top")
+        
+        if title == None:
+            title = coord1+' '+coord2
         plt.title(title)
 
         plt.subplot2grid((3,3), (1,2), colspan=1, rowspan=2)
