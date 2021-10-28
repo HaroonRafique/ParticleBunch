@@ -698,6 +698,7 @@ class MatchedBunchGenerator3D:
         return (array_x, array_xp, array_y, array_yp, array_z, array_zp)
 
 class ParticleBunch:
+    
     # Constructors
     #---------------------------------------------------------
         
@@ -721,11 +722,18 @@ class ParticleBunch:
             n = file_len
             ParticleArray = np.empty([n], dtype=Particle)
             for i in range(file_len):
-                ParticleArray[i] = Particle.fromfileline(filename,i)
+                if not i%10000: print(str('Loaded '+str(i)+' particles'))
+                data_line = linelist[i]
+                input_coords = [x for x in data_line.split()]
+                ParticleArray[i] = Particle(input_coords[0], input_coords[1], input_coords[2], input_coords[3], input_coords[4], input_coords[5])
         else:
+            infile = open(filename)
+            linelist = infile.readlines()
             ParticleArray = np.empty([n], dtype=Particle)
             for i in range(n):
-                ParticleArray[i] = Particle.fromfileline(filename,i)
+                data_line = linelist[i]
+                input_coords = [x for x in data_line.split()]
+                ParticleArray[i] = Particle(input_coords[0], input_coords[1], input_coords[2], input_coords[3], input_coords[4], input_coords[5])
         return cls(n, ParticleArray)
     
     # Populates the bunch as Gaussian in one plane, zeros in all other planes
