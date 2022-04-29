@@ -166,7 +166,7 @@ class MatchedBunchGenerator1D:
         self.up_max = math.sqrt(self.gamma*self.emittance)   
     
     # deltap = (Delta p)/p 
-    def setDispersion(d, deltap):
+    def setDispersion(self, d, deltap):
         self.d = d
         self.deltap = deltap
         self.dispersion_set = True
@@ -277,12 +277,18 @@ class MatchedBunchGenerator1D:
         array_up = []
         u, up = self.Poincare_1D()
         
-        sig_range = sig_max - sig_min
-        sig_step = sig_range / (n-1)
+        if n == 1 and sig_max == 1:
+            array_u.append(u)
+            array_up.append(up)            
         
-        for i in range(int(n)):          
-            array_u.append(u*(i*sig_step+sig_min))
-            array_up.append(up)
+        else:        
+            sig_range = sig_max - sig_min
+            if n == 1: sig_step = 0
+            else:      sig_step = sig_range / (n-1)
+
+            for i in range(int(n)):          
+                array_u.append(u*(i*sig_step+sig_min))
+                array_up.append(up)
         
         return (array_u, array_up)   
         
@@ -309,7 +315,7 @@ class MatchedBunchGenerator2D:
         self.yp_max = math.sqrt(self.gamma_y*self.emittance_y)   
         
         # deltap = (Delta p)/p 
-    def setDispersion(dx, dy, deltap):
+    def setDispersion(self, dx, dy, deltap):
         self.dx = dx
         self.dy = dy
         self.deltap = deltap
@@ -469,16 +475,24 @@ class MatchedBunchGenerator2D:
         
         x, xp, y, yp = self.Poincare_2D()
         
-        sig_range = sig_max - sig_min
-        sig_step = sig_range / (n-1)
-        
-        for i in range(int(n)):  
-            array_x.append(x*(i*sig_step+sig_min))
+        if n == 1 and sig_max == 1:
+            array_x.append(x)
             array_xp.append(xp)
-            array_y.append(y*(i*sig_step+sig_min))
+            array_y.append(y)
             array_yp.append(yp)
         
-        return (array_x, array_xp, array_y, array_yp)              
+        else:        
+            sig_range = sig_max - sig_min
+            if n == 1: sig_step = 0
+            else:      sig_step = sig_range / (n-1)
+
+            for i in range(int(n)):  
+                array_x.append(x*(i*sig_step+sig_min))
+                array_xp.append(xp)
+                array_y.append(y*(i*sig_step+sig_min))
+                array_yp.append(yp)
+        
+        return (array_x, array_xp, array_y, array_yp)        
         
 class MatchedBunchGenerator3D:
     
@@ -510,7 +524,7 @@ class MatchedBunchGenerator3D:
         self.zp_max = math.sqrt(self.gamma_z*self.emittance_z)   
         
     # deltap = (Delta p)/p 
-    def setDispersion(dx, dy, deltap):
+    def setDispersion(self, dx, dy, deltap):
         self.dx = dx
         self.dy = dy
         self.deltap = deltap
@@ -740,7 +754,7 @@ class ParticleBunch:
     @classmethod
     def Gaussian_1D(cls, n, std_dev, mean, coordinate):  
         ParticleArray = np.empty([int(n)], dtype=Particle)
-        coord = cls.sort_coordinate(coordinate)
+        coord = cls.sort_coordinate(cls, coordinate)
         
         for i in range(int(n)):
             if coord == 'x':     ParticleArray[i] = Particle(cls.Gaussian_generator(mean, std_dev), 0., 0., 0., 0., 0.)
@@ -755,8 +769,8 @@ class ParticleBunch:
     @classmethod
     def Gaussian_2D(cls, n, mean1, std_dev1, mean2, std_dev2, coordinate1, coordinate2):          
         ParticleArray = np.empty([int(n)], dtype=Particle)
-        coord1 = cls.sort_coordinate(coordinate1)
-        coord2 = cls.sort_coordinate(coordinate2)             
+        coord1 = cls.sort_coordinate(cls, coordinate1)
+        coord2 = cls.sort_coordinate(cls, coordinate2)             
         
         random_coord_1_array = cls.Gaussian_array_generator(mean1, std_dev1, int(n))
         random_coord_2_array = cls.Gaussian_array_generator(mean2, std_dev2, int(n))
@@ -822,18 +836,26 @@ class ParticleBunch:
         return cls(n, ParticleArray)
     
     @classmethod
-    def Uniform_2D(cls, n, horizontal=True):  
+    def Uniform_1D(cls, n, min_lim, max_lim, horizontal=True):  
         ParticleArray = np.empty([int(n)], dtype=Particle)
         if horizontal:
-            for i in range(n):
-                ParticleArray[i] = Particle(cls.Uniform_generator(), 0., 0., 0., 0., 0.)
+            for i in range(int(n)):
+                ParticleArray[i] = Particle(cls.Uniform_generator(min_lim, max_lim), 0., 0., 0., 0., 0.)
         else:
-            for i in range(n):
-                ParticleArray[i] = Particle(0., 0., cls.Uniform_generator(), 0., 0., 0.)
+            for i in range(int(n)):
+                ParticleArray[i] = Particle(0., 0., cls.Uniform_generator(min_lim, max_lim), 0., 0., 0.)
         return cls(n, ParticleArray)
-
+    
     @classmethod
-    def Poincare_2D(cls, n, emittance_x, emittance_y, alpha_x, beta_x, alpha_y, beta_y, min_sig, max_sig, deltap=None, d_x=None, d_y=None):        
+    def Uniform_2D(cls, n, min_x, max_x, min_y, max_y):  
+        ParticleArray = np.empty([int(n)], dtype=Particle)
+        for i in range(int(n)):
+            ParticleArray[i] = Particle(cls.Uniform_generator(min_x, max_x), 0., cls.Uniform_generator(min_y, max_y), 0., 0., 0.)
+        return cls(n, ParticleArray)
+    
+    
+    @classmethod
+    def Poincare_2D(cls, n, emittance_x, emittance_y, alpha_x, beta_x, alpha_y, beta_y, min_sig, max_sig, closed_orbit_x=0., closed_orbit_y=0., deltap=None, d_x=None, d_y=None):        
         Generator = MatchedBunchGenerator2D(emittance_x, emittance_y, alpha_x, beta_x, alpha_y, beta_y)
         if (deltap is not None):
             if (d_x is not None):
@@ -845,26 +867,40 @@ class ParticleBunch:
         array_x, array_xp, array_y, array_yp = Generator.Poincare_2D_array(n, min_sig, max_sig)
 
         ParticleArray = np.empty([int(n)], dtype=Particle)
-        for i in range(int(n)): ParticleArray[i] = Particle(array_x[i], array_xp[i], array_y[i], array_yp[i], 0., 0.)
-
+        
+        if deltap is None:
+            for i in range(int(n)): ParticleArray[i] = Particle(array_x[i]+closed_orbit_x, array_xp[i], array_y[i]+closed_orbit_y, array_yp[i], 0., 0.)
+        else: 
+            for i in range(int(n)): ParticleArray[i] = Particle(array_x[i]+closed_orbit_x, array_xp[i], array_y[i]+closed_orbit_y, array_yp[i], 0., deltap)
+                
         return cls(n, ParticleArray)
     
     @classmethod
-    def Poincare_1D(cls, n, coordinate, emittance, alpha, beta, min_sig, max_sig, deltap=None, dispersion=None):  
-        coord = cls.sort_coordinate(coordinate)      
-        Generator = MatchedBunchGenerator1D(emittance, alpha, beta)
+    def Poincare_1D(cls, n, coordinate, emittance, alpha, beta, min_sig, max_sig, closed_orbit=0., deltap=None, dispersion=None):  
+        print(coordinate)
+        coord = cls.sort_coordinate(cls, coordinate)      
+        Generator = MatchedBunchGenerator1D(emittance, alpha, beta)        
+        ParticleArray = np.empty([int(n)], dtype=Particle)
         
         if coord == 'x':
             if (deltap is not None) and (dispersion is not None):
-                    Generator.setDispersion(dispersion, 0., deltap)
+                    Generator.setDispersion(dispersion, deltap)
             array_x, array_xp = Generator.Poincare_1D_array(n, min_sig, max_sig)
-            for i in range(int(n)): ParticleArray[i] = Particle(array_x[i], array_xp[i], 0., 0., 0., 0.)
+            
+            if deltap is None:
+                for i in range(int(n)): ParticleArray[i] = Particle(array_x[i]+closed_orbit, array_xp[i], 0., 0., 0., 0.)
+            else:                
+                for i in range(int(n)): ParticleArray[i] = Particle(array_x[i]+closed_orbit, array_xp[i], 0., 0., 0., deltap)
 
         elif coord == 'y':
             if (deltap is not None) and (dispersion is not None):
-                    Generator.setDispersion(0., dispersion, deltap)
+                    Generator.setDispersion(dispersion, deltap)
             array_y, array_yp = Generator.Poincare_1D_array(n, min_sig, max_sig)
-            for i in range(int(n)): ParticleArray[i] = Particle(0., 0., array_y[i], array_yp[i], 0., 0.)
+            
+            if deltap is None:
+                for i in range(int(n)): ParticleArray[i] = Particle(0., 0., array_y[i]+closed_orbit, array_yp[i], 0., 0.)
+            else:                
+                for i in range(int(n)): ParticleArray[i] = Particle(0., 0., array_y[i]+closed_orbit, array_yp[i], 0., deltap)
             
         else:
             print('ParticleBunch::Poincare_1D: coordinate must be x or y. Process abandoned')
@@ -980,13 +1016,10 @@ class ParticleBunch:
             if n <= max_lim and n >= min_lim: within_limits = False
         return n
     
-    def Uniform_generator():
-        min_lim = 0.0 
-        max_lim = 1.0   
-            
+    def Uniform_generator(min_lim = 0.0, max_lim = 1.0):            
         within_limits = True
         while within_limits:
-            n = np.random.uniform(0,1, size=None)
+            n = np.random.uniform(min_lim,max_lim, size=None)
             if n <= max_lim and n >= min_lim: within_limits = False
         return n        
             
