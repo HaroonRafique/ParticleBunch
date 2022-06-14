@@ -84,6 +84,12 @@ class Particle:
     def set_t(self, t): self.__t = float(t)
     def set_pt(self, pt): self.__pt = float(pt)
         
+    def set_closed_orbit(self, co_x=0., co_xp=0., co_y=0., co_yp=0.):
+        self.__x += co_x
+        self.__xp += co_xp
+        self.__y += co_y
+        self.__yp += co_yp
+        
     def MatrixMultiply(self, M):
         # Check Matrix is 6x6
         if M.shape == (6,6):
@@ -119,6 +125,15 @@ class Particle:
     
     def PTC_string(self):
         PTC_filestring = 'ptc_start, x='+str(self.get_x())+ \
+        ', px='+str(self.get_xp())+ \
+        ', y='+str(self.get_y())+ \
+        ', py='+str(self.get_yp())+ \
+        ', t='+str(self.get_t())+ \
+        ', pt='+str(self.get_pt())+';\n'
+        return PTC_filestring
+    
+    def PYORBIT_string(self):
+        PYORBIT_filestring = 'ptc_start, x='+str(self.get_x())+ \
         ', px='+str(self.get_xp())+ \
         ', y='+str(self.get_y())+ \
         ', py='+str(self.get_yp())+ \
@@ -727,6 +742,7 @@ class ParticleBunch:
             ParticleArray[i] = Particle.empty()        
         return cls(n, ParticleArray)
     
+    # Expects 6 column data, no headers
     @classmethod
     def from_file(cls, filename, n=None):  
         if n is None:
@@ -749,6 +765,36 @@ class ParticleBunch:
                 input_coords = [x for x in data_line.split()]
                 ParticleArray[i] = Particle(input_coords[0], input_coords[1], input_coords[2], input_coords[3], input_coords[4], input_coords[5])
         return cls(n, ParticleArray)
+    
+    # Expects cpymad trackone table converted to df
+    # headers
+    # # id turn x px y py t pt s e
+    @classmethod
+    def from_tracked_df(cls, input_df, n=None):  
+        i = 0       
+        if n is None:            
+            n = int(len(input_df))
+            ParticleArray = np.empty([n], dtype=Particle)
+            for index, row in input_df.iterrows():
+                ParticleArray[i] = Particle(row['x'], row['px'], row['y'], row['py'], row['t'], row['pt'])
+                i += 1
+        else:
+            ParticleArray = np.empty([n], dtype=Particle)
+
+            for index, row in input_df.iterrows():
+                ParticleArray[i] = Particle(row['x'], row['px'], row['y'], row['py'], row['t'], row['pt'])
+                i += 1
+                if i >= n: break
+    
+        return cls(n, ParticleArray)        
+    
+    # Expects cpymad trackone table converted to df converted to dat
+    # headers
+    # # id turn x px y py t pt s e
+    @classmethod
+    def from_tracked_file(cls, filename, n=None):  
+        input_df = pnd.read_table(filename, header=0, delim_whitespace=True)
+        return cls.from_tracked_df(input_df, n=None)
     
     # Populates the bunch as Gaussian in one plane, zeros in all other planes
     @classmethod
@@ -1079,6 +1125,10 @@ class ParticleBunch:
     def Match(self, beta_x, beta_y, alpha_x, alpha_y, D_x, D_y, D_xp, D_yp):    
         MM6 = self.Matching_Matrix(beta_x, beta_y, alpha_x, alpha_y, D_x, D_y, D_xp, D_yp)
         for i in self: i.MatrixMultiply(MM6)
+            
+    def Add_Closed_Orbit(self, co_x=0., co_px=0., co_y=0., co_py=0.):
+        for particle in self.__ParticleArray:
+            particle.set_closed_orbit(co_x, co_px, co_y, co_py)
     
     # ITERATORS
     #---------------------------------------------
